@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <title>Visualizer</title>
+</head>
+<body>
+    <script type="module" src="app.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/1.4.0/wavesurfer.min.js"></script>
+    <audio src="violinA1.mp3"></audio>
+    <div class="box">
+        <div class="visualizer"></div>
+    </div>
+    <div class="play">
+        <div class="btn btn-play"></div>
+    </div>
+    <script>
+        const btn = document.querySelector('.btn');
+        const audio = document.querySelector('audio');
+        const visualizer = document.querySelector('.visualizer');
+
+        btn.addEventListener('click', e => {
+            audio.paused ? audio.play() : audio.pause();
+            
+            btn.classList.toggle('btn-play');
+            btn.classList.toggle('btn-pause');
+        });
+
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new window.AudioContext();
+        const analyser = ctx.createAnalyser();
+        const source = ctx.createMediaElementSource(audio);
+        source.connect(analyser);
+        source.connect(ctx.destination);
+        analyser.fftSize = 64;
+        const bufferLength = analyser.frequencyBinCount;
+
+        let dataArray = new Uint8Array(bufferLength);
+        let elements = [];
+        for(let i = 0; i < bufferLength; i++) {
+            const element = document.createElement('span');
+            element.classList.add('element');
+            elements.push(element);
+            visualizer.appendChild(element);
+        }
+
+        const clamp = (num, min, max) => {
+            if(num >= max) return max;
+            if(num <= min) return min;
+            return num;
+        }
+        
+        const update = () => {
+            requestAnimationFrame(update);
+            analyser.getByteFrequencyData(dataArray);
+            for (let i = 0; i < bufferLength; i++) {
+                let item = dataArray[i];
+                item = item > 150 ? item / 0.5 : item * 1.5;
+                elements[i].style.transform = `rotateZ(${i * (360 / bufferLength)}deg) translate(-50%, ${clamp(item, 100, 150)}px)`;
+            }
+        };
+        update();
+    </script>
+    <!--SOUNDWAVESURFER-->
+    <div id="waveform"> 
+        <script>
+            var wavesurfer = WaveSurfer.create({
+                container: '#waveform',
+                barWidth: 3,
+                progressColor: "#ff0",
+                cursorColor: 'transparent', 
+                waveColor: 'white', // 파형의 색상을 투명하게 설정
+            });
+            
+            var spaceKey = 32; 
+            document.body.onkeyup = function(e){
+                if(e.keyCode == spaceKey){
+                    changeImage();
+                }
+            };
+            
+            /*var leftarrow = 37; 
+            document.body.onkeyup = function(r){
+                if(e.keyCode == leftarrow){
+                    Backward();
+                }
+            };
+            
+            var rightarrow = 39; 
+            document.body.onkeyup = function(k){
+                if(e.keyCode == rightarrow){
+                    Forward();
+                }
+            };*/
+            wavesurfer.load('violinA1.mp3');
+            wavesurfer.on('finish', function () { changeImage(); });
+        </script>
+        <div style="position: relative;">
+        <img id="myImage" src="play.png" onclick="changeImage()" width='19px' style="position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%);"></button>
+        <img id="myImage1" src="back.png" onclick="Backward()" width='19px' style="position: absolute; top: 15%; left: 48%; transform: translate(-50%, -50%);"></button>
+        <img id="myImage2" src="forward.png" onclick="Forward()" width='19px' style="position: absolute; top: 15%; left: 52%; transform: translate(-50%, -50%);"></button>
+        </div>
+    </div>
+    <script>
+        function changeImage() {
+            var image = document.getElementById('myImage');
+            if (image.src.match('play')) {
+                image.src = "pause.png";
+                wavesurfer.play();
+            } 
+            else {
+                image.src = "play.png";
+                wavesurfer.pause();
+            }
+        }
+        function Backward() {
+            wavesurfer.skipBackward(5);
+            if (wavesurfer.isPlaying()) {
+                wavesurfer.play();
+            }
+        }
+        function Forward() {
+            wavesurfer.skipForward(5);
+            if (wavesurfer.isPlaying()) {
+                wavesurfer.play();
+            }
+        }
+    </script>
+</body>
+</html>
